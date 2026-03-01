@@ -2,22 +2,21 @@
 
 A clean "Web4-style" console UI + Linux bridge API that runs a whitelisted set of commands to trigger your Python module agent.
 
-## 📚 Documentation Languages
-- **[English Documentation](README_EN.md)** - Complete guide in English
-- **[Dokumentasi Bahasa Indonesia](README.md#panduan-penggunaan-bahasa-indonesia)** - Panduan lengkap dalam Bahasa Indonesia
+## 📚 Documentation
+- **[English Documentation](README.md)** - Complete guide in English
 
-## Panduan Penggunaan (Bahasa Indonesia)
+## Usage Guide (English)
 
-### Ringkasan
-- Terminal NEXORA adalah antarmuka web untuk menjalankan perintah yang di-whitelist melalui “Linux Bridge”.
-- Alur: Frontend (UI) → Backend (Bridge API) → Eksekusi perintah dari `backend/commands.json`.
+### Overview
+- NEXORA Terminal is a web interface for executing whitelisted commands through a “Linux Bridge”.
+- Flow: Frontend (UI) → Backend (Bridge API) → Execute commands from `backend/commands.json`.
 
-### Prasyarat
-- Node.js untuk frontend dan backend.
-- (Opsional) Python agent terpasang di server Linux.
-- File whitelist: `backend/commands.json` (salin dari `commands.sample.json`).
+### Prerequisites
+- Node.js for frontend and backend.
+- (Optional) Python agent installed on Linux server.
+- Whitelist file: `backend/commands.json` (copy from `commands.sample.json`).
 
-### Menjalankan Backend (Linux Bridge)
+### Running Backend (Linux Bridge)
 ```bash
 cd backend
 cp .env.example .env
@@ -25,40 +24,40 @@ cp commands.sample.json commands.json
 npm i
 npm start
 ```
-- Port default: `8787`
-- Sesuaikan `commands.json` hanya berisi perintah yang aman dan diperlukan.
+- Default port: `8787`
+- Adjust `commands.json` to only contain safe and necessary commands.
 
-### Menjalankan Frontend (Terminal Web)
+### Running Frontend (Web Terminal)
 ```bash
 cd frontend
 npm i
 export VITE_API_BASE="http://localhost:8787"
 npm run dev
 ```
-- Buka: `http://localhost:5173`
-- Frontend membaca API dari `VITE_API_BASE`. Jika kosong, gunakan path relatif `/api/...` (cocok untuk proxy/rewrite di hosting).
+- Open: `http://localhost:5173`
+- Frontend reads API from `VITE_API_BASE`. If empty, uses relative path `/api/...` (suitable for proxy/rewrite in hosting).
 
-### Menggunakan Terminal
-- Klik “Refresh” untuk memuat katalog perintah dari `/api/commands`.
-- Pilih perintah di panel kiri, isi argumen di panel tengah, klik “Run”.
-- Gunakan “Cancel”, “Copy Output”, dan “Clear” sesuai kebutuhan.
+### Using the Terminal
+- Click “Refresh” to load command catalog from `/api/commands`.
+- Select command in left panel, enter arguments in middle panel, click “Run”.
+- Use “Cancel”, “Copy Output”, and “Clear” as needed.
 
-### Sinkronisasi ke GitHub (otomatis)
-- Isi variabel lingkungan backend (lihat `.env.example`):
+### GitHub Synchronization (Automatic)
+- Fill backend environment variables (see `.env.example`):
   - `GITHUB_TOKEN`, `GITHUB_OWNER`, `GITHUB_REPO`, `GITHUB_BRANCH`, `GITHUB_PATH`
-- Endpoint tersedia:
-  - `POST /api/github/create-repo` → Membuat repo (jika belum ada)
-  - `POST /api/github/connect` → Inisialisasi git, set remote, commit awal
-  - `POST /api/github/push` → Push commit ke branch
-  - `POST /api/github/sync-commands` → Menulis `backend/commands.json` ke repo via GitHub API
-- Di UI tersedia tombol: “Connect Repo”, “Push Repo”, “Sync GitHub”.
-- Rekomendasi repo: akun `AgentNEXORA` dengan nama misalnya `nexora-console`.
+- Available endpoints:
+  - `POST /api/github/create-repo` → Create repo (if not exists)
+  - `POST /api/github/connect` → Initialize git, set remote, initial commit
+  - `POST /api/github/push` → Push commit to branch
+  - `POST /api/github/sync-commands` → Write `backend/commands.json` to repo via GitHub API
+- UI buttons available: “Connect Repo”, “Push Repo”, “Sync GitHub”.
+- Recommended repo: account `AgentNEXORA` with name like `nexora-console`.
 
-### Keamanan
-- Jangan menaruh token di kode; simpan di environment (dotenv).
-- Batasi akses Bridge API (reverse proxy, jaringan internal, atau auth tambahan).
-- Validasi argumen; backend menolak karakter shell berbahaya.
-- Hindari log rahasia; review perubahan `commands.json` via PR untuk audit.
+### Security
+- Don’t put tokens in code; store in environment (dotenv).
+- Limit Bridge API access (reverse proxy, internal network, or additional auth).
+- Validate arguments; backend rejects dangerous shell characters.
+- Avoid secret logs; review `commands.json` changes via PR for audit.
 
 ## Quick Start
 
