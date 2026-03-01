@@ -2,6 +2,10 @@
 
 A clean "Web4-style" console UI + Linux bridge API that runs a whitelisted set of commands to trigger your Python module agent.
 
+## 📚 Documentation Languages
+- **[English Documentation](README_EN.md)** - Complete guide in English
+- **[Dokumentasi Bahasa Indonesia](README.md#panduan-penggunaan-bahasa-indonesia)** - Panduan lengkap dalam Bahasa Indonesia
+
 ## Panduan Penggunaan (Bahasa Indonesia)
 
 ### Ringkasan
