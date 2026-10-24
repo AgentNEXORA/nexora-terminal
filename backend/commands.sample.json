@@ -3,25 +3,25 @@
     "id": "agent_help",
     "title": "Help / Options",
     "description": "Show available flags and usage for nexora_agent",
-    "exec": "bash",
+    "exec": "/opt/nexora-agent/.venv/bin/python",
     "params": [
-      "-lc",
-      "/opt/nexora-agent/.venv/bin/python -m nexora_agent --help"
+      "-m",
+      "nexora_agent",
+      "--help"
     ],
     "timeoutMs": 30000
   },
   {
     "id": "agent_prompt",
     "title": "Run Prompt",
-    "description": "Execute a prompt via python module (CLI on-demand)",
-    "exec": "bash",
+    "description": "Execute a prompt via the installed Python module (direct process, no shell)",
+    "exec": "/opt/nexora-agent/.venv/bin/python",
     "params": [
-      "-lc",
-      "/opt/nexora-agent/.venv/bin/python -m nexora_agent --prompt \"{{prompt}}\""
+      "-m",
+      "nexora_agent",
+      "--prompt",
+      "{{prompt}}"
     ],
-    "timeoutMs": 180000,
-    "exampleArgs": {
-      "prompt": "Summarize key risks from today\u2019s operational logs and propose mitigations."
-    }
+    "timeoutMs": 180000
   }
 ]

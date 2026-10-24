@@ -1,0 +1,1 @@
+{"routes":[{"path":"/","title":"لوحة التحكم"},{"path":"/devices","title":"الأجهزة والمحطات"},{"path":"/requests","title":"طلبات HMAC"},{"path":"/security","title":"النشاط الأمني"},{"path":"/settings","title":"الإعدادات"}]}

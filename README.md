@@ -1,108 +1,92 @@
-# NEXORA Console (CLI On-Demand)
+# NEXORA COMMAND · Linux Bridge
 
-A clean "Web4-style" console UI + Linux bridge API that runs a whitelisted set of commands to trigger your Python module agent.
+مركز تشغيل عربي RTL يقدّم واجهة الإدارة وخادم الجسر من **النطاق نفسه**. يدعم استقبال نبضات الطرفيات الموقّعة، قراءة كتالوج أوامر الخادم، تنفيذ الأمر المختار من القائمة المسموحة، ومراجعة سجل التنفيذ، وإرسال مهام HMAC محددة.
 
-## 📚 Documentation
-- **[English Documentation](README.md)** - Complete guide in English
+> لا تعرض اللوحة أرقامًا أو أجهزة تجريبية. تبدأ بيانات الجسر والسجلات فارغة، ولا تظهر محطة إلا بعد استقبال `heartbeat` صحيح التوقيع.
 
-## Usage Guide (English)
+## تشغيل الجسر محليًا
 
-### Overview
-- NEXORA Terminal is a web interface for executing whitelisted commands through a “Linux Bridge”.
-- Flow: Frontend (UI) → Backend (Bridge API) → Execute commands from `backend/commands.json`.
-
-### Prerequisites
-- Node.js for frontend and backend.
-- (Optional) Python agent installed on Linux server.
-- Whitelist file: `backend/commands.json` (copy from `commands.sample.json`).
-
-### Running Backend (Linux Bridge)
 ```bash
 cd backend
 cp .env.example .env
-cp commands.sample.json commands.json
-npm i
-npm start
-```
-- Default port: `8787`
-- Adjust `commands.json` to only contain safe and necessary commands.
-
-### Running Frontend (Web Terminal)
-```bash
-cd frontend
-npm i
-export VITE_API_BASE="http://localhost:8787"
-npm run dev
-```
-- Open: `http://localhost:5173`
-- Frontend reads API from `VITE_API_BASE`. If empty, uses relative path `/api/...` (suitable for proxy/rewrite in hosting).
-
-### Using the Terminal
-- Click “Refresh” to load command catalog from `/api/commands`.
-- Select command in left panel, enter arguments in middle panel, click “Run”.
-- Use “Cancel”, “Copy Output”, and “Clear” as needed.
-
-### GitHub Synchronization (Automatic)
-- Fill backend environment variables (see `.env.example`):
-  - `GITHUB_TOKEN`, `GITHUB_OWNER`, `GITHUB_REPO`, `GITHUB_BRANCH`, `GITHUB_PATH`
-- Available endpoints:
-  - `POST /api/github/create-repo` → Create repo (if not exists)
-  - `POST /api/github/connect` → Initialize git, set remote, initial commit
-  - `POST /api/github/push` → Push commit to branch
-  - `POST /api/github/sync-commands` → Write `backend/commands.json` to repo via GitHub API
-- UI buttons available: “Connect Repo”, “Push Repo”, “Sync GitHub”.
-- Recommended repo: account `AgentNEXORA` with name like `nexora-console`.
-
-### Security
-- Don’t put tokens in code; store in environment (dotenv).
-- Limit Bridge API access (reverse proxy, internal network, or additional auth).
-- Validate arguments; backend rejects dangerous shell characters.
-- Avoid secret logs; review `commands.json` changes via PR for audit.
-
-## Quick Start
-
-### Backend (Linux bridge)
-```bash
-cd backend
-cp .env.example .env
-cp commands.sample.json commands.json
-npm i
+npm ci
+# أنشئ backend/commands.json يدويًا من أوامر راجعها المشغّل؛ لا تنسخ أمثلة قبل مراجعتها.
 npm start
 ```
 
-### Frontend
-```bash
-cd frontend
-npm i
-# Linux/mac:
-export VITE_API_BASE="http://localhost:8787"
-npm run dev
+افتح `http://localhost:8787`. تُقدَّم الواجهة وواجهات API من خادم Express نفسه. يلزم ضبط `CONTROL_API_KEY` بسر عشوائي قوي لا يقل عن 32 محرفًا، وتهيئة مفاتيح الطرفيات عبر `NEXORA_KEYS_JSON` أو سر الجسر المنفرد `NEXORA_BRIDGE_HMAC_SECRET`. لا تضع الأسرار في Git أو الواجهة.
+
+## اتصال Linux Bridge
+
+- يستقبل `POST /api/terminal/heartbeat` و`POST /api/terminal/event` الرسائل الطرفية بتوقيع HMAC-SHA256.
+- عند ضبط `NEXORA_BRIDGE_HMAC_SECRET` على الخادم، يرسل العميل `nexora-linux-bridge-prod` في ترويسة `x-nexora-key`؛ تبقى بقية مفاتيح `NEXORA_KEYS_JSON` كما هي.
+- صيغة التوقيع: `HMAC-SHA256(secret, timestamp + "." + rawRequestBody)`؛ راجع [HMAC_INTEGRATION.md](HMAC_INTEGRATION.md) للعقد الكامل.
+- تُحسب حالة الاتصال من آخر نبضة موثقة؛ الافتراضي أن تصبح العقدة غير متصلة بعد 300 ثانية (`HEARTBEAT_STALE_SECONDS`).
+- عند غياب المفتاح أو النبضة تعرض الواجهة «غير مهيأ» أو «بانتظار أول نبض» بدل العدادات الافتراضية.
+- يمكن تفعيل نبضة ذاتية من عملية Render نفسها عبر `NEXORA_SELF_HEARTBEAT_ENABLED=true` و`NEXORA_SELF_HEARTBEAT_URL=https://nexora-terminal-control.onrender.com/api/terminal/heartbeat`. تستخدم الحلقة `NEXORA_BRIDGE_HMAC_SECRET` الموجود على الخادم، ترسل نبضة فور بدء العملية ثم كل 120 ثانية افتراضيًا، ولا تسجل السر أو التوقيع. هذه آلية داخل العملية وتستأنف تلقائيًا بعد إعادة التشغيل؛ لا يمكنها إبقاء الجهاز متصلًا أثناء توقف خدمة Render بالكامل.
+
+## مهام HMAC الموقّعة
+
+- تُعرض حالة المهام داخل لوحة NEXORA نفسها. `POST /api/control/jobs` يقبل من جلسة المدير `jobId` و`commandId` فقط؛ يضيف الخادم هوية المرسل ويوقّع الطلب ثم يرسله إلى `POST /internal/jobs`.
+- يتحقق المسار الداخلي من HMAC-SHA256 على الطريقة والمسار والطابع الزمني والـ nonce وبايتات JSON الخام، ويرفض إعادة استخدام nonce. `jobId` يمنع التنفيذ المكرر عند إعادة الطلب بتوقيع وnonce جديدين.
+- لا يقبل المسار `exec` أو shell أو معاملات أو متغيرات بيئة من المتصفح. يتطلب أي أمر إضافي `internalJob: true` في ملف الخادم مع ملف تنفيذي ومعاملات ثابتة ومدققة؛ تُرفض أوامر shell والإجراءات ذات المدخلات المتغيرة.
+- المشغّل الحالي هو `local_render` داخل خدمة NEXORA على Render. فحص `health_check` المدمج يقرأ حالة عملية Node فقط؛ **لا يوجد مضيف Linux خارجي مؤكد الاتصال** ولا يُعرض على أنه متصل.
+- يبقى التنفيذ معطّلًا ما لم يُضبط `NEXORA_BRIDGE_JOBS_MODE=single_instance_memory` مع سر HMAC صالح. لا تضبطه إلا بعد التأكد من تشغيل نسخة واحدة وإيقاف autoscaling. يحتفظ التطبيق مؤقتًا بـ nonce والنتائج في ذاكرة محدودة (حتى 10,000 nonce و1,000 job؛ nonce دقيقتان والنتائج 24 ساعة)، وتمسح عند إعادة التشغيل. يلزم مخزن Redis مشترك قبل التوسع أو الاعتماد طويل الأجل.
+- الحد الافتراضي للطلب 8 KiB، والخرج 16 KiB، والمدة القصوى 30 ثانية، ومعدل 30 طلبًا/دقيقة لكل عنوان عميل. راجع [HMAC_INTEGRATION.md](HMAC_INTEGRATION.md) للعقد الدقيق.
+
+## أوامر الخادم
+
+يقرأ الخادم القائمة من `COMMANDS_FILE` (الافتراضي `backend/commands.json`؛ المسار النسبي محسوب من مجلد `backend`). يحتوي الملف المضمّن فقط على أمر `runtime_info` المدمج للقراءة، ويمكن إضافة أوامر تنفيذ أخرى بعد مراجعتها والتحقق من الملف التنفيذي على المضيف.
+
+- `GET /api/commands` يعرض عناوين/أوصاف/مدخلات القائمة فقط؛ لا يعيد تفاصيل تنفيذ الأمر إلى المتصفح.
+- `POST /api/run` يتطلب جلسة مدير و`commandId` موجودًا في القائمة. لا تقبل الواجهة نص shell خامًا.
+- معاملات الواجهة تحلّ محل العناصر النائبة `{{name}}` فقط. ينفذ الخادم الملف التنفيذي والمعاملات المسجلة مع `shell: false`، ولا يمرر مفاتيح الإدارة أو HMAC أو Render إلى بيئة العملية الفرعية.
+- إرفاق وصف `serviceAction` إلى عنصر قائمة يعرّفه كإجراء خدمة: `{"operation":"start|stop|restart","service":"اسم الخدمة"}`. يظل التنفيذ الفعلي هو `exec` و`params` اللذان اختارهما المشغّل في الملف؛ لا يبتكر النظام أوامر خدمة أو يضيفها تلقائيًا.
+- يطلب الخادم تأكيدًا صريحًا مطابقًا لمعرّف أمر الخدمة قبل التنفيذ؛ وتعرض الواجهة اسم الخدمة ونوع الإجراء في خطوة تأكيد منفصلة.
+- سجل التدقيق يحتفظ بآخر 100 محاولة تشغيل في ذاكرة العملية، ولا يسجل قيم المدخلات. يمسح عند إعادة تشغيل العملية؛ استخدم مخزنًا دائمًا مُدارًا إذا كان الاحتفاظ طويل الأجل شرطًا تشغيليًا.
+
+قبل اعتماد أي `commands.json` شغّل `npm run check:all` من مجلد `backend` أو شغّل `node validate-commands.mjs /مسار/commands.json` مباشرة. يفحص الأمران قائمة الإنتاج والعينة، ويرفض المدقق مفسرات shell، وبيئة التنفيذ غير المسموحة، والمسارات التنفيذية أو مسارات العمل النسبية، ومدخلات الأوامر الداخلية المتغيرة. لا يحتاج `runtime_info` إلى ملف تنفيذي لأنه built-in ينفذ القراءة داخل عملية NEXORA. لا يُعد `commands.sample.json` قائمة تشغيل تلقائية؛ هو نموذج يُراجع ويُنسخ فقط بعد التحقق من الملف التنفيذي الموجود على المضيف.
+
+## واجهات الإدارة والجلسات
+
+تتطلب مسارات `/api/control/*` و`/api/commands` و`/api/run` جلسة المدير HttpOnly أو ترويسة إدارة موثوقة. تسجل الواجهة الدخول عبر `/api/auth/login` ولا تخزن المفتاح الإداري في JavaScript. تبقى أسرار HMAC ومفاتيح Render و`MANUS_API_KEY` على الخادم.
+
+- `GET /api/control/overview`
+- `GET /api/control/devices`
+- `GET /api/control/requests`
+- `GET /api/control/security`
+- `GET /api/control/executions`
+- `GET /api/control/keys`
+- `POST /api/control/keys` و`POST /api/control/keys/:id/disable`
+- `GET /api/control/jobs` و`GET /api/control/jobs/commands`
+- `POST /api/control/jobs` لإرسال مهمة مسموحة؛ لا يشغّل شيئًا عند تحميل الواجهة.
+- `POST /internal/jobs` يستقبل الجسم الخام الموقّع من الخادم فقط، لا من إدخال shell حر.
+
+واجهة Manus محمية بجلسة المدير: `POST /api/control/manus/tasks` يقبل `{ "message": "..." }` فقط، بطول لا يتجاوز 10,000 حرف. لا يبدأ إنشاء المهمة إلا عند ضغط المستخدم زر الإرسال. يفرض الخادم `share_visibility: "private"` و`message.connectors: []` كي لا تُستخدم موصلات الحساب الافتراضية، ولا يقبل endpoint أو headers أو scopes أو مرفقات من المتصفح. يستخدم الخادم `MANUS_API_KEY` في `x-manus-api-key` ولا يسجل قيمته أو تفاصيل أخطاء المزود.
+
+بعد إنشاء المهمة، يعرض المركز معرفها ورابطها وإيصال تتبع موقّعًا محدودًا بسبعة أيام؛ `POST /api/control/manus/tasks/progress` لا يقبل إلا معرف المهمة وإيصالها، فلا توجد واجهة لاستعراض مهام الحساب. يقرأ الخادم `task.listMessages` يدويًا أو بعد وصول إشعار webhook موثّق، ويعرض الرسائل النصية وحالة `running` أو `waiting` أو `stopped` أو `error`. إذا تطلبت المهمة إجراءً، يوجّه المركز المستخدم إلى Manus ولا يؤكد أي إجراء. عند `stopped` يفحص `task.detail.has_running_background_jobs`؛ القيمة `true` أو غيابها تعني أن الاكتمال غير مؤكد، ولا يُعلن انتهاء التشغيل إلا عند `false`.
+
+يستقبل `POST /api/manus/webhook` إشعاري `task_created` و`task_stopped` فقط. عنوان callback الثابت بعد النشر هو `https://nexora-terminal-control.onrender.com/api/manus/webhook`. يتحقق الخادم من `X-Webhook-Signature` بتوقيع RSA-SHA256 على البايتات الخام، وطابع زمني ضمن 5 دقائق، ومفتاح Manus العام المخزّن مؤقتًا لمدة ساعة. تُزال إعادة الإرسال بواسطة `event_id`؛ ولا تُحوّل حمولة webhook أو عنوان المهمة أو العنوان أو الرسائل أو المرفقات إلى سجل أو بث. لا يُبث إلى الجلسة الإدارية إلا `{taskId,eventType}` عبر `GET /api/control/manus/tasks/:taskId/events`؛ بعدها يقرأ المتصفح التفاصيل من واجهة الحالة المحمية. لا تُعالج إلا معرفات أنشأها NEXORA، وتُحفظ ملكية المعرفات في ذاكرة العملية حتى 7 أيام؛ إذا أعيد تشغيل الخدمة، يبقى التحقق اليدوي بإيصال المهمة متاحًا لكن لا يُستأنف بث webhook لتلك المعرفات القديمة.
+
+## إدارة Render المقيّدة
+
+يبقى قسم Render للقراءة فقط افتراضيًا. يعرض جرد الخدمات وآخر حالة Deploy ولا ينفذ أي تغيير ما لم تُفعّل سياسة العمليات صراحةً في بيئة الخادم. لتفعيل تحكم محدود، اضبط `RENDER_MUTATIONS_ENABLED=1`، ثم ضع معرّفات الخدمات المسموحة فقط في `RENDER_ALLOWED_SERVICE_IDS`، والعمليات المطلوبة فقط في `RENDER_ALLOWED_OPERATIONS`؛ لا يُقرأ أي من هذه القيم من المتصفح.
+
+العمليات المدعومة هي `restart` و`deploy` و`rollback` عبر واجهة Render الرسمية. كل طلب إلى `POST /api/control/render/actions` يتطلب جلسة المدير، و`same-origin`، و`operationId`، ومعرّف خدمة مطابقًا للـ allowlist، وعملية مضمّنة، و`confirmed: true`. يدعم المسار `dryRun: true` بلا استدعاء Render، ويحتفظ بنتيجة العملية في ذاكرة محدودة لمنع التكرار داخل نفس تشغيل الخدمة. كل محاولة تُسجّل في سجل التنفيذ دون تسجيل مفتاح Render أو محتوى الأسرار.
+
+مثال إعداد آمن بعد مراجعة معرّفات الخدمات الفعلية:
+
+```ini
+RENDER_API_KEY=ضعه في أسرار Render فقط
+RENDER_MUTATIONS_ENABLED=1
+RENDER_ALLOWED_SERVICE_IDS=srv-example1,srv-example2
+RENDER_ALLOWED_OPERATIONS=restart,deploy
 ```
 
-Open: http://localhost:5173
+لا تضع كل خدمات الحساب في allowlist. ابدأ بخدمة اختبار واحدة، استخدم `dryRun`، ثم فعّل `restart` فقط. أضف `deploy` أو `rollback` بعد تحديد سياسة نشر ونسخة احتياطية ومراجعة مستقلة. لا تغيّر هذه المتغيرات من واجهة NEXORA، ولا توجد واجهة لتعديل Environment Variables أو تنفيذ Shell حر.
 
-## Agent: python -m nexora_agent --prompt "..."
+عمليات WhatsApp الخاصة بالجلسة وQR والمجموعات والمحافظ لا تُستنتج من زر Render عام. تحتاج Adapter خاصًا بالخدمة مع فحص قراءة أولًا، و`dryRun`، وسجل تدقيق، وإجراء owner-only منفصل لأي تغيير مالي أو متعلق بالهوية.
 
-Install your agent module in a dedicated venv (recommended):
-```bash
-sudo mkdir -p /opt/nexora-agent
-cd /opt/nexora-agent
-python3 -m venv .venv
-./.venv/bin/pip install -U pip
-./.venv/bin/pip install nexora_agent
-./.venv/bin/python -m nexora_agent --help
-```
+## التحقق
 
-## Whitelisted commands
-
-Backend runs ONLY commands listed in `backend/commands.json`. Use `{{placeholders}}` inside command strings and send args from the UI.
-
-### Sync commands.json from official GitHub (optional)
-```bash
-curl -fsSL "https://raw.githubusercontent.com/ORG/REPO/main/commands.json" -o /opt/nexora-console/backend/commands.json
-```
-
-## Security notes (recommended)
-- Run backend as a non-root user.
-- Keep bridge API behind a reverse proxy / internal network.
-- Consider adding API key auth if exposed beyond localhost.
+من `backend/` شغّل `npm run check:all && npm test`. الاختبارات تنشئ خادمًا مؤقتًا محليًا وملف allowlist اختباريًا، وتنفّذ أمر Node محليًا يكتب نصًا ثابتًا فقط؛ تستخدم Manus محاكاة محلية وزوج RSA مولّدًا للاختبار يمنعان أي اتصال خارجي، ولا تنشئ مهمة حقيقية ولا تتصل بخادم إنتاج أو Render أو Manus API.

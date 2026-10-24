@@ -1,0 +1,9 @@
+[
+  {
+    "name": "production-terminal",
+    "id": "key_live_replace_me",
+    "secret": "replace-with-a-32-byte-secret",
+    "status": "active",
+    "created": "2026-10-09T00:00:00.000Z"
+  }
+]

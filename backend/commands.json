@@ -1,0 +1,57 @@
+[
+  {
+    "id": "runtime_info",
+    "title": "معلومات تشغيل الخدمة",
+    "description": "قراءة إصدار Node ومدة تشغيل عملية NEXORA فقط",
+    "exec": "/usr/bin/node",
+    "params": [
+      "-e",
+      "console.log(JSON.stringify({node:process.version, uptimeSeconds:Math.floor(process.uptime()), service:'nexora-terminal-control'}))"
+    ],
+    "timeoutMs": 5000
+  },
+  {
+    "id": "health_check",
+    "title": "فحص صحة الخدمة",
+    "description": "قراءة حالة خدمة NEXORA وإصدار Node ومدة التشغيل دون تعديل",
+    "exec": "/usr/bin/node",
+    "params": [
+      "-e",
+      "console.log(JSON.stringify({status:'ok', service:'nexora-terminal-control', node:process.version, uptimeSeconds:Math.floor(process.uptime()), checkedAt:new Date().toISOString()}))"
+    ],
+    "timeoutMs": 5000
+  },
+  {
+    "id": "process_metrics",
+    "title": "مقاييس العملية",
+    "description": "قراءة PID واستخدام الذاكرة ومدة التشغيل للعملية فقط",
+    "exec": "/usr/bin/node",
+    "params": [
+      "-e",
+      "const m=process.memoryUsage(); console.log(JSON.stringify({pid:process.pid, uptimeSeconds:Math.floor(process.uptime()), rssBytes:m.rss, heapUsedBytes:m.heapUsed, heapTotalBytes:m.heapTotal}))"
+    ],
+    "timeoutMs": 5000
+  },
+  {
+    "id": "runtime_platform",
+    "title": "منصة التشغيل",
+    "description": "قراءة إصدار Node ونظام التشغيل والمعمارية دون تعديل",
+    "exec": "/usr/bin/node",
+    "params": [
+      "-e",
+      "console.log(JSON.stringify({node:process.version, platform:process.platform, arch:process.arch, release:require('os').release()}))"
+    ],
+    "timeoutMs": 5000
+  },
+  {
+    "id": "cpu_metrics",
+    "title": "مراقبة CPU",
+    "description": "قراءة حمل النظام وعدد الأنوية ونسبة CPU التقريبية لعملية NEXORA دون تعديل",
+    "exec": "/usr/bin/node",
+    "params": [
+      "-e",
+      "const fs=require('fs'),os=require('os'),pid=process.ppid,read=()=>{const p=fs.readFileSync('/proc/'+pid+'/stat','utf8').trim().split(/\\s+/),t=Number(p[13])+Number(p[14]),s=fs.readFileSync('/proc/stat','utf8').split('\\n')[0].trim().split(/\\s+/).slice(1).reduce((a,v)=>a+Number(v),0);return {t,s}};const a=read();setTimeout(()=>{const b=read(),dt=b.t-a.t,ds=b.s-a.s;console.log(JSON.stringify({pid,cpuCount:os.cpus().length,loadAverage:os.loadavg(),processCpuPercent:ds?Number((dt/ds*os.cpus().length*100).toFixed(2)):0,sampleMs:250}))},250)"
+    ],
+    "timeoutMs": 5000
+  }
+]

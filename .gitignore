@@ -7,6 +7,8 @@ yarn-error.log*
 
 # Environment
 .env
+.env.*
+backend/keys.json
 .env.local
 .env.development.local
 .env.test.local
@@ -40,5 +42,9 @@ Thumbs.db
 # GitHub App private key
 *.pem
 
-# Frontend folder (has its own git repo)
-frontend/
+# Runtime secrets and command allowlists
+backend/commands.json
+backend/keys.json
+*.key
+*.p12
+*.pfx

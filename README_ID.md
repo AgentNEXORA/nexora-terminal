@@ -4,7 +4,7 @@ A clean "Web4-style" console UI + Linux bridge API that runs a whitelisted set o
 
 ## 📚 Dokumentasi Bahasa
 - **[Dokumentasi Bahasa Indonesia](README_ID.md)** - Panduan lengkap dalam Bahasa Indonesia (Saat ini)
-- **[English Documentation](README.md)** - Complete guide in English
+- **[English Documentation](README_EN.md)** - Complete guide in English
 
 ## Panduan Penggunaan (Bahasa Indonesia)
 
